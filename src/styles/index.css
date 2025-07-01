@@ -1,0 +1,9 @@
+@import url(nprogress.css);
+@import url(borders.css);
+
+
+#chat-container {
+  overflow-anchor: none !important;
+}
+
+
