@@ -3,14 +3,14 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main  # or 'master', depending on your default branch
+      - main 
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up SSH
@@ -18,13 +18,25 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H 13.60.20.154 >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy to EC2
         run: |
-          ssh -i ~/.ssh/id_rsa ubuntu@13.60.20.154 "
-            cd ~/voice-agent-frontend &&
-            git pull origin main &&
-            npm install &&
+          ssh -o StrictHostKeyChecking=no ${{ secrets.USERNAME }}@${{ secrets.HOST }} << 'EOF'
+            # Go to the project directory
+            cd ~/voice-agent-frontend
+
+            # Update the code
+            git pull origin main
+
+            # Install dependencies
+            npm install
+
+            # Build the project (if it's a React or frontend project)
             npm run build
-          "
+
+            # Optional: Start with PM2 (recommended)
+            pm2 delete voice-agent-frontend || true
+            pm2 start npm --name "voice-agent-frontend" -- start
+            pm2 save
+          EOF
